@@ -21,6 +21,8 @@ Copy `.env.example` to `.env` and fill in:
 - `REGISTRY_PASSWORD` - a Docker Hub [access token](https://hub.docker.com/settings/security)
 
 **3. Authenticate services**
+
+Make sure Docker is running locally, then:
 ```bash
 modal setup          # Modal account for sandboxed execution
 docker login         # Docker Hub for image pulls
@@ -39,7 +41,7 @@ Go to [hub.docker.com](https://hub.docker.com) and create a new **private** repo
 Build and push Docker images for a dataset to your private repo:
 
 ```bash
-anvil publish-images --dataset datasets/all-swe -u YOUR_USERNAME --repo anvil-images
+anvil publish-images --dataset datasets/file-utilization -u YOUR_USERNAME --repo anvil-images
 ```
 
 Modal sandboxes pull images from Docker Hub, so task images need to be pushed there first.
@@ -51,13 +53,15 @@ Run an agent on all tasks and evaluate the patches:
 ```bash
 anvil run-evals \
   --model openrouter/google/gemini-3-flash-preview \
-  --dataset all-swe \
+  --dataset file-utilization \
   --agent mini-swe-agent \
   --dockerhub-username YOUR_USERNAME \
   --dockerhub-repo anvil-images
 ```
 
-Results go to `datasets/<dataset>/runs/<agent>_<model>/`. Re-running resumes from where it left off.
+Results go to `datasets/<dataset>/runs/<agent>_<model>/`. 
+
+> 💡 **Progress is saved automatically** to minimize costs. If you re-run the same command, completed tasks are skipped—nothing runs on Modal for those tasks. Use `--no-continue` to start fresh.
 
 ### Options
 

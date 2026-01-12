@@ -26,7 +26,7 @@ class BuildTask:
     context: Path
 
     def tag(self, username: str, repo: str) -> str:
-        return f"{username}/{repo}:{self.name}.base"
+        return f"{username}/{repo}:{self.name}"
 
 
 def _docker_logged_in() -> bool:
@@ -61,6 +61,7 @@ def _discover_build_tasks(tasks_dir: Path) -> list[BuildTask]:
     """
     creation_dir = tasks_dir / "dockerfiles" / "docker_image_creation"
     base_df_dir = tasks_dir / "dockerfiles" / "base_dockerfile"
+    instance_df_dir = tasks_dir / "dockerfiles" / "instance_dockerfile"
 
     if not creation_dir.exists():
         return []
@@ -68,7 +69,13 @@ def _discover_build_tasks(tasks_dir: Path) -> list[BuildTask]:
     contexts = {d.name: d for d in creation_dir.iterdir() if d.is_dir()}
     tasks = []
 
-    dockerfile_dir = base_df_dir if base_df_dir.exists() else creation_dir
+    # Prefer instance_dockerfile/, then base_dockerfile/, then creation_dir
+    if instance_df_dir.exists():
+        dockerfile_dir = instance_df_dir
+    elif base_df_dir.exists():
+        dockerfile_dir = base_df_dir
+    else:
+        dockerfile_dir = creation_dir
 
     for task_dir in sorted(dockerfile_dir.iterdir()):
         dockerfile = task_dir / "Dockerfile"
@@ -158,7 +165,7 @@ def _update_instances_yaml(
         tag = built.get(iid) or built.get(project)
         if not tag:
             # Always update to new repo even if build failed
-            tag = f"{username}/{repo}:{iid}.base"
+            tag = f"{username}/{repo}:{iid}"
         inst["image_name"] = tag
         updated += 1
 
