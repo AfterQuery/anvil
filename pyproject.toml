@@ -1,0 +1,26 @@
+[project]
+name = "anvil"
+version = "0.1.0"
+description = "AQ Project Anvil - SWE-Bench Pro Tasks"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "docker>=7.1.0",
+    "litellm>=1.80.11",
+    "modal>=1.2.6",
+    "openai>=2.14.0",
+    "pandas>=2.0.0",
+    "polars>=1.36.1",
+    "python-dotenv>=1.0.0",
+    "pyyaml>=6.0",
+    "ruamel-yaml>=0.19.1",
+    "tqdm>=4.65.0",
+    "typer>=0.20.1",
+    "yamllint>=1.37.1",
+]
+
+[project.scripts]
+anvil = "anvil.cli:app"
+
+[tool.uv]
+package = true

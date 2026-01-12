@@ -1,0 +1,18 @@
+model:
+  # Litellm-compatible model identifier; filled by anvil
+  model_name: <LITELLM_MODEL_ID>
+  # Optional: set a specific model class, e.g. 'anthropic' or a full class path
+  # model_class: null
+  # The underlying provider API key is read from environment (e.g., OPENAI_API_KEY)
+  # Ignore cost tracking errors for models without registered costs (e.g., free models)
+  cost_tracking: ignore_errors
+
+environment:
+  # Use docker to run SWEBench images locally
+  environment_class: docker
+
+agent:
+  # Default agent settings; override as needed
+  max_steps: 50
+  max_thoughts: 100
+  # You can tune additional fields supported by DefaultAgent here

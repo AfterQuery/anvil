@@ -1,0 +1,18 @@
+output_dir: sweagent_results/
+sweagent_command: |
+  sweagent run-batch \
+    --config config/tool_use.yaml \
+    --output_dir {output_dir} \
+    --num_workers 10 \
+    --random_delay_multiplier 1 \
+    --instances.type file \
+    --instances.path sweagent_wrapper_configs/instances.yaml \
+    --instances.slice :10 \
+    --instances.shuffle=False \
+    --instances.deployment.type=modal \
+    --instances.deployment.startup_timeout 1800 \
+    --instances.deployment.runtime_timeout 3600 \
+    --agent.model.name <LITELLM_MODEL_ID> \
+    --agent.model.api_key <PROVIDER_API_KEY> \
+    --agent.model.per_instance_cost_limit 0 \
+    --agent.model.per_instance_call_limit 0

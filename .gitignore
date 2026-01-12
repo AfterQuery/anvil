@@ -1,0 +1,13 @@
+# OS Files
+.DS_Store
+
+# Python
+__pycache__/
+*.egg-info/
+
+# Local Working Stuff
+.env
+.claude
+.pdm-build
+.venv
+datasets/*/runs
