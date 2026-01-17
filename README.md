@@ -66,10 +66,17 @@ Use `--n-attempts` to control how many runs per task (useful for pass@k metrics)
 
 > 💡 **Progress is saved automatically** to minimize costs. If you re-run the same command, completed tasks are skipped—nothing runs on Modal for those tasks. Use `--no-continue` to start fresh.
 
+> 💡 Use `--agent oracle` to run golden patches from `gold_patches.json` instead of an LLM—useful for validating your test harness.
+
 ### Options
 
 | Flag | Default | Description |
 |------|---------|-------------|
+| `--model` | — | Model ID (required for agents, optional for oracle) |
+| `--dataset` | — | Dataset ID or path |
+| `--dockerhub-username` | — | Docker Hub username |
+| `--dockerhub-repo` | — | Docker Hub repo name |
+| `--agent` | mini-swe-agent | Agent to use (`mini-swe-agent` or `oracle`) |
 | `--n-attempts` | 1 | Attempts per task (for pass@k) |
 | `--max-parallel` | 30 | Concurrent agent runs |
 | `--no-continue` | false | Start fresh, ignore previous results |
