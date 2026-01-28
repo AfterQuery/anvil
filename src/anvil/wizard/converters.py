@@ -300,7 +300,7 @@ def convert_dataset(
     ] = "afterquery",
     dockerhub_repo: Annotated[
         str, typer.Option("--dockerhub-repo", help="Docker Hub repository name")
-    ] = "sweap-images",
+    ] = "anvil-images",
     output_dir: Annotated[
         Path | None, typer.Option("--output-dir", "-o", help="Output directory")
     ] = None,

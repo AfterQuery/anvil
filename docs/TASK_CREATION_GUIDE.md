@@ -14,7 +14,7 @@ my-dataset/
 ├── requirements.txt              # pytest dependencies
 ├── my-repo/                      # Your repository
 ├── task-1/
-│   ├── Dockerfile               # FROM {user}/sweap-images:{dataset}.base
+│   ├── Dockerfile               # FROM {user}/anvil-images:{dataset}.base
 │   ├── instance_info.txt        # Instance ID, FAIL_TO_PASS, PASS_TO_PASS
 │   ├── run_script.sh            # Bash script with embedded tests
 │   ├── task_tests.py            # Your pytest tests
@@ -152,7 +152,7 @@ anvil validate-dataset -d my-dataset
 ### Step 6: Convert to Anvil Format
 
 ```bash
-anvil convert-dataset -d my-dataset -u your-username --dockerhub-repo sweap-images
+anvil convert-dataset -d my-dataset -u your-username --dockerhub-repo anvil-images
 ```
 
 This generates `instances.yaml`, `gold_patches.json`, and the directory structure needed for evaluation.
@@ -160,7 +160,7 @@ This generates `instances.yaml`, `gold_patches.json`, and the directory structur
 ### Step 7: Publish Docker Images
 
 ```bash
-anvil publish-images -d my-dataset -u your-username --repo sweap-images
+anvil publish-images -d my-dataset -u your-username --repo anvil-images
 ```
 
 ### Step 8: Verify with Oracle Agent
@@ -169,7 +169,7 @@ After publishing images, verify your tasks using the **oracle** agent:
 
 ```bash
 # Oracle agent: applies gold patches, all tests should PASS
-anvil run-evals -d my-dataset --agent oracle -u your-username --dockerhub-repo sweap-images
+anvil run-evals -d my-dataset --agent oracle -u your-username --dockerhub-repo anvil-images
 ```
 
 The oracle agent applies your gold patches and runs the tests. All tests should pass if your solution is correct.
@@ -189,7 +189,7 @@ anvil run-evals -d my-dataset \
   --agent mini-swe-agent \
   --model anthropic/claude-sonnet-4-20250514 \
   -u your-username \
-  --dockerhub-repo sweap-images
+  --dockerhub-repo anvil-images
 ```
 
 ---
@@ -330,7 +330,7 @@ PASS_TO_PASS: []
 ### Task Dockerfile
 
 ```dockerfile
-FROM afterquery/sweap-images:my-dataset.base
+FROM afterquery/anvil-images:my-dataset.base
 WORKDIR /app
 ```
 

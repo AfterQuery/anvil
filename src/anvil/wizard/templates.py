@@ -75,12 +75,12 @@ RUN chmod +x /app/run_tests.sh || true
 '''
 
 # Requirements for pytest
-REQUIREMENTS_TXT = '''pytest>=7.0.0
+REQUIREMENTS_TXT = '''pytest>=7.0.0so 
 pytest-timeout>=2.0.0
 '''
 
 # Task-specific Dockerfile (extends base image)
-TASK_DOCKERFILE_TEMPLATE = '''FROM {dockerhub_username}/sweap-images:{dataset_id}.base
+TASK_DOCKERFILE_TEMPLATE = '''FROM {dockerhub_username}/anvil-images:{dataset_id}.base
 WORKDIR /app
 '''
 
