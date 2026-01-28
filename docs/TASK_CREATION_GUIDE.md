@@ -313,6 +313,7 @@ git checkout .
 1. Check Docker is running
 2. Verify `REGISTRY_USERNAME` and `REGISTRY_PASSWORD`
 3. Check Dockerfile syntax
+4. **DockerHub username issues** - If you encounter image pull errors after submission, try using `afterquery` as the dockerhub username when creating tasks
 
 ---
 
