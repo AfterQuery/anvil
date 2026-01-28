@@ -66,7 +66,22 @@ Use `--n-attempts` to control how many runs per task (useful for pass@k metrics)
 
 > 💡 **Progress is saved automatically** to minimize costs. If you re-run the same command, completed tasks are skipped—nothing runs on Modal for those tasks. Use `--no-continue` to start fresh.
 
-> 💡 Use `--agent oracle` to run golden patches from `gold_patches.json` instead of an LLM—useful for validating your test harness.
+### Oracle Agent
+
+Use the `oracle` agent to validate your task harnesses before running LLM agents:
+
+```bash
+# Oracle: applies gold patches - all tests should PASS
+anvil run-evals \
+  --dataset datasets/my-dataset \
+  --agent oracle \
+  --dockerhub-username <username> \
+  --dockerhub-repo anvil-images
+```
+
+The oracle agent skips LLM rollouts and applies gold patches from `gold_patches.json` directly. All tests should pass if your harness is correct.
+
+**Prerequisites**: Requires Modal and Docker Hub setup (see [Setup](#setup)).
 
 ### Options
 
@@ -81,6 +96,37 @@ Use `--n-attempts` to control how many runs per task (useful for pass@k metrics)
 | `--max-parallel` | 30 | Concurrent agent runs |
 | `--no-continue` | false | Start fresh, ignore previous results |
 | `--max-wait` | auto | Minutes to wait for Modal rate limits |
+
+## Creating Custom Tasks
+
+Anvil includes a task creation wizard to help you build your own evaluation datasets.
+
+### Quick Start
+
+```bash
+# 1. Initialize dataset with your repository
+anvil init-dataset -d my-dataset --repo-path ./my-repo --base-image golang:1.22
+
+# 2. Add tasks (problem statement + solution patch + tests)
+anvil add-task -d my-dataset \
+  --problem-file problem.md \
+  --patch-file solution.diff \
+  --tests-file tests.py \
+  --fail-to-pass "test_feature_works,test_edge_case"
+
+# 3. Convert to Anvil evaluation format
+anvil convert-dataset -d my-dataset -u <dockerhub-username>
+
+# 4. Publish and verify with oracle
+anvil publish-images -d my-dataset -u <dockerhub-username> --repo anvil-images
+anvil run-evals -d my-dataset --agent oracle -u <dockerhub-username> --dockerhub-repo anvil-images
+```
+
+See **[docs/TASK_CREATION_GUIDE.md](docs/TASK_CREATION_GUIDE.md)** for the complete guide including:
+- Writing effective structural tests
+- Task file format reference
+- Troubleshooting tips
+- Full workflow example
 
 ## How it works
 

@@ -35,9 +35,9 @@ from .pass_at_k import (
 
 def _eval_id(agent: str, model: str) -> str:
     """Compose eval_id as '<agent>_<model-suffix>'."""
-    # Oracle agent doesn't use a model, so just use "oracle"
+    # Oracle agent doesn't use a model
     if agent == "oracle":
-        return "oracle"
+        return agent
     base = model_id_from_model(model)
     return f"{agent}_{base}" if agent else base
 
@@ -160,7 +160,7 @@ def run_evaluation(
     except ImportError:
         pass
 
-    # Oracle agent doesn't need a model - use "oracle" as default
+    # Oracle agent doesn't need a model
     if agent == "oracle":
         model = model or "oracle"
     elif not model:
@@ -219,14 +219,14 @@ def run_evaluation(
         if not gold_patches_path.exists():
             typer.echo(f"Error: gold_patches.json not found at {gold_patches_path}")
             return 1
-        
+
         gold_patches = json.loads(gold_patches_path.read_text())
         typer.echo(f"Loaded {len(gold_patches)} golden patches")
-        
+
         # Build patches for eval, add attempt=1
         bad_eval_moved = _cleanup_bad_evals(base_out, instances, k, eval_id)
         completed_evals = _get_completed_evals(base_out, instances, k, eval_id)
-        
+
         all_patches = []
         for p in gold_patches:
             iid = p["instance_id"]
