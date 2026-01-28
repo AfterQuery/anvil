@@ -120,7 +120,7 @@ Type 'done' when done making changes...
 ```
 
 1. **You edit the repo** - Make the changes that solve the task
-2. **Press Enter** - When you're done editing
+2. **Type "done"** - When you're done editing
 3. **Diff is captured** - The wizard runs `git diff` and shows a preview
 4. **Confirm** - "Use this diff?"
 5. **Repo resets** - "Reset repo for next task?" - repo returns to clean state
