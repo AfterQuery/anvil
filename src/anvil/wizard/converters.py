@@ -75,13 +75,17 @@ def load_task_from_directory(task_dir: Path) -> Task | None:
 
     try:
         fail_to_pass = eval(fail_str) if fail_str else []
-    except Exception:
-        pass
+    except Exception as e:
+        import sys
+        print(f"Warning: Failed to parse fail_to_pass in {task_dir.name}: {e}", file=sys.stderr)
+        fail_to_pass = []
 
     try:
         pass_to_pass = eval(pass_str) if pass_str else []
-    except Exception:
-        pass
+    except Exception as e:
+        import sys
+        print(f"Warning: Failed to parse pass_to_pass in {task_dir.name}: {e}", file=sys.stderr)
+        pass_to_pass = []
 
     return Task(
         task_id=task_dir.name,
@@ -124,12 +128,18 @@ def generate_instances_yaml(
     instances = []
 
     for task in tasks:
-        # Generate image name: username/repo:dataset.task-N
-        image_tag = f"{dataset_id}.{task.task_id}"
+        # Generate image name: username/repo:instance_id
+        image_tag = task.instance_id
         image_name = f"{dockerhub_username}/{dockerhub_repo}:{image_tag}"
+
+        # repo_name is required by swe_bench_pro_eval.py to load the base
+        # Dockerfile from dockerfiles/base_dockerfile/{repo_name}/Dockerfile.
+        repo_name = task.instance_id.partition(".")[0]
 
         instance = {
             "instance_id": task.instance_id,
+            "repo_name": repo_name,
+            "base_commit": task.base_commit,
             "image_name": image_name,
             "problem_statement": task.problem_statement,
             "before_repo_set_cmd": task.before_repo_set_cmd,
@@ -185,7 +195,7 @@ def generate_combined_tasks_csv(tasks: list[Task]) -> str:
             task.issue_specificity,
             task.issue_categories,
             task.before_repo_set_cmd,
-            f"tasks/{task.task_id}/task_tests.py",
+            str([f"tasks/{task.task_id}/task_tests.py"]),
         ]
         writer.writerow(row)
 
@@ -208,6 +218,11 @@ def convert_to_anvil_structure(
     if not tasks:
         raise ValueError(f"No tasks found in {dataset_path}")
 
+    # The docker_image_creation directory name must match the instance_id prefix,
+    # because publish.py uses partition(".")[0] on the instance_id to look up
+    # the build context in docker_image_creation/.
+    project_name = tasks[0].instance_id.partition(".")[0]
+
     created_files: dict[str, list[Path]] = {
         "config": [],
         "dockerfiles": [],
@@ -216,20 +231,43 @@ def convert_to_anvil_structure(
 
     # Create output directories
     output_path.mkdir(parents=True, exist_ok=True)
-    dockerfiles_base_dir = output_path / "dockerfiles" / "docker_image_creation" / dataset_id
+    dockerfiles_base_dir = output_path / "dockerfiles" / "docker_image_creation" / project_name
+    dockerfiles_base_dockerfile_dir = output_path / "dockerfiles" / "base_dockerfile" / project_name
     dockerfiles_instance_dir = output_path / "dockerfiles" / "instance_dockerfile"
     run_scripts_dir = output_path / "run_scripts"
 
     dockerfiles_base_dir.mkdir(parents=True, exist_ok=True)
+    dockerfiles_base_dockerfile_dir.mkdir(parents=True, exist_ok=True)
     dockerfiles_instance_dir.mkdir(parents=True, exist_ok=True)
     run_scripts_dir.mkdir(parents=True, exist_ok=True)
 
-    # Copy base Dockerfile
+    # Copy base Dockerfile to both docker_image_creation (for publish.py)
+    # and base_dockerfile (for swe_bench_pro_eval.py's create_entryscript)
     base_dockerfile = dataset_path / "Dockerfile"
     if base_dockerfile.exists():
         dest = dockerfiles_base_dir / "Dockerfile"
         shutil.copy(base_dockerfile, dest)
         created_files["dockerfiles"].append(dest)
+
+        dest_base = dockerfiles_base_dockerfile_dir / "Dockerfile"
+        shutil.copy(base_dockerfile, dest_base)
+        created_files["dockerfiles"].append(dest_base)
+
+    # Copy requirements.txt into docker_image_creation context so the
+    # base Dockerfile's COPY requirements.txt . instruction can find it
+    requirements_txt = dataset_path / "requirements.txt"
+    if requirements_txt.exists():
+        dest_req = dockerfiles_base_dir / "requirements.txt"
+        shutil.copy(requirements_txt, dest_req)
+        created_files["dockerfiles"].append(dest_req)
+
+    # Copy repo source into docker_image_creation context.
+    # publish.py uses docker_image_creation/{project_name}/ as the Docker build
+    # context for both base and instance images. The base Dockerfile's COPY . .
+    # needs the repo source to be in this context.
+    repo_dir = dataset_path / project_name
+    if repo_dir.is_dir():
+        shutil.copytree(repo_dir, dockerfiles_base_dir, dirs_exist_ok=True)
 
     # Generate instances.yaml
     instances_yaml = generate_instances_yaml(
