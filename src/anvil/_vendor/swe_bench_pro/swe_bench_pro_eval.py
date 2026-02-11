@@ -85,7 +85,16 @@ def load_local_script(scripts_dir, instance_id, script_name):
 
 def create_entryscript(sample):
     before_repo_set_cmd = sample["before_repo_set_cmd"].strip().split("\n")[-1]
-    selected_test_files_to_run = ",".join(eval(sample["selected_test_files_to_run"]))
+    raw_test_files = sample["selected_test_files_to_run"]
+    try:
+        parsed = eval(raw_test_files)
+        if isinstance(parsed, list):
+            selected_test_files_to_run = ",".join(parsed)
+        else:
+            selected_test_files_to_run = str(parsed)
+    except Exception:
+        # Fallback: treat bare string as a single test file path
+        selected_test_files_to_run = raw_test_files
     base_commit = sample["base_commit"]
     base_dockerfile = load_base_docker(sample["repo_name"])
     instance_dockerfile = instance_docker(sample["instance_id"])
@@ -103,8 +112,15 @@ def create_entryscript(sample):
     entry_script = f"""
 {env_cmds}
 cd /app
-git reset --hard {base_commit}
-git checkout {base_commit}
+# If .git/ is missing (e.g. repo uploaded as zip without git history),
+# initialize a git repo so git apply can work
+if [ ! -d .git ]; then
+    git init -q
+    git add -A
+    git commit -q -m "init" --allow-empty
+fi
+git reset --hard {base_commit} 2>/dev/null || true
+git checkout {base_commit} 2>/dev/null || true
 git apply -v --ignore-whitespace /workspace/patch.diff 2>&1 || \\
 patch -p1 --forward --reject-file=- --no-backup-if-mismatch < /workspace/patch.diff 2>&1 || true
 {before_repo_set_cmd}
@@ -276,7 +292,7 @@ def eval_with_modal(
             })
 
         image = modal.Image.from_registry(
-            dockerhub_image_uri, secret=registry_secret,
+            dockerhub_image_uri, secret=registry_secret, force_build=True,
         ).dockerfile_commands(['CMD ["sleep", "infinity"]'])
 
         sandbox = modal.Sandbox.create(

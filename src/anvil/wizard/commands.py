@@ -523,7 +523,8 @@ def add_task(
     errors = validate_test_names(tests_content, fail_to_pass_list, pass_to_pass_list)
     if errors:
         for err in errors:
-            typer.secho(f"Warning: {err}", fg=typer.colors.YELLOW)
+            typer.secho(f"Error: {err}", fg=typer.colors.RED)
+        raise typer.Exit(1)
 
     # Auto-detect base commit
     if not base_commit:
@@ -560,7 +561,10 @@ def add_task(
             repo_name = dataset_path.name
 
     # Create task object
-    instance_id = f"{dataset_path.name}.{task_id}"
+    # instance_id prefix must match repo_name because publish.py uses
+    # partition(".")[0] to look up the docker_image_creation context directory,
+    # and AfterQueryFront names that directory after repoName.
+    instance_id = f"{repo_name}.{task_id}"
     task = Task(
         task_id=task_id,
         instance_id=instance_id,

@@ -64,23 +64,20 @@ BASE_DOCKERFILE_TEMPLATE = '''FROM {base_image}
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y \\
-    build-essential cmake curl git tmux asciinema python3 python3-pip \\
+RUN apt-get update && apt-get install -y python3 python3-pip git curl patch \\
     && rm -rf /var/lib/apt/lists/*
 
-COPY requirements.txt .
-RUN pip3 install --no-cache-dir --break-system-packages -r requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages pytest pytest-timeout
 COPY . .
-RUN chmod +x /app/run_tests.sh || true
 '''
 
 # Requirements for pytest
-REQUIREMENTS_TXT = '''pytest>=7.0.0so 
+REQUIREMENTS_TXT = '''pytest>=7.0.0
 pytest-timeout>=2.0.0
 '''
 
 # Task-specific Dockerfile (extends base image)
-TASK_DOCKERFILE_TEMPLATE = '''FROM {dockerhub_username}/anvil-images:{dataset_id}.base
+TASK_DOCKERFILE_TEMPLATE = '''FROM {dockerhub_username}/anvil-images:{project_name}.base
 WORKDIR /app
 '''
 
@@ -93,9 +90,9 @@ cd /app
 # Create test directory preserving original structure
 mkdir -p tasks/{task_id}
 
-cat > tasks/{task_id}/task_tests.py << 'EOF'
+cat > tasks/{task_id}/task_tests.py << 'ANVIL_TEST_CODE'
 {test_code}
-EOF
+ANVIL_TEST_CODE
 
 python3 -m pytest -v tasks/{task_id}/task_tests.py 2>&1 || true
 '''

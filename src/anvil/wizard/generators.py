@@ -28,11 +28,11 @@ def generate_requirements_txt() -> str:
     return REQUIREMENTS_TXT
 
 
-def generate_task_dockerfile(dataset_id: str, dockerhub_username: str = "afterquery") -> str:
+def generate_task_dockerfile(project_name: str, dockerhub_username: str = "afterquery") -> str:
     """Generate the task-specific Dockerfile that extends the base image."""
     return TASK_DOCKERFILE_TEMPLATE.format(
         dockerhub_username=dockerhub_username,
-        dataset_id=dataset_id,
+        project_name=project_name,
     )
 
 
@@ -86,7 +86,7 @@ def generate_tasks_csv_row(task: Task) -> str:
         task.issue_specificity,
         task.issue_categories,
         task.before_repo_set_cmd,
-        f"tasks/{task.task_id}/task_tests.py",  # selected_test_files_to_run
+        str([f"tasks/{task.task_id}/task_tests.py"]),  # selected_test_files_to_run
     ]
 
     writer.writerow(row)
@@ -115,9 +115,12 @@ def write_task_files(
     created_files = []
 
     # Write Dockerfile
+    # The base image tag must match the docker_image_creation directory name,
+    # which is the project name (instance_id prefix before the first ".").
     dockerfile_path = task_dir / "Dockerfile"
+    project_name = task.instance_id.partition(".")[0]
     dockerfile_content = generate_task_dockerfile(
-        dataset_id=dataset_path.name,
+        project_name=project_name,
         dockerhub_username=dockerhub_username,
     )
     dockerfile_path.write_text(dockerfile_content)
