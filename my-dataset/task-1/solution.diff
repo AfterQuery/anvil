@@ -1,0 +1,10 @@
+Update service.py:
+- Add method `get_profile(self, user_id: int)` to `UserService` interface.
+- Implement `get_profile` in `userService` to return serialized dict or None.
+
+Update controller.py:
+- Add route `/api/profile`.
+- Use `require_auth` to check authentication; return 401 if not auth.
+- Use `userService().get_profile(1)` to fetch profile; return 404 if None.
+
+This file describes the changes required to implement the task.
