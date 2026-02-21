@@ -1,0 +1,4 @@
+Instance ID: spring-tough-tasks.task-1
+Test Files: tasks/task-1/task_tests.py
+FAIL_TO_PASS: ['test_rate_limiting']
+PASS_TO_PASS: []

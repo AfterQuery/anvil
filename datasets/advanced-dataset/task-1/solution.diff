@@ -1,0 +1,111 @@
+diff --git a/app.py b/app.py
+new file mode 100644
+index 0000000..1a9255b
+--- /dev/null
++++ b/app.py
+@@ -0,0 +1,12 @@
++from flask import Flask
++
++app = Flask(__name__)
++
++
++@app.route('/')
++def index():
++    return 'OK', 200
++
++
++if __name__ == '__main__':
++    app.run(host='0.0.0.0', port=8000)
+diff --git a/cache.py b/cache.py
+index b215c20..8505dd4 100644
+--- a/cache.py
++++ b/cache.py
+@@ -3,24 +3,67 @@
+ Leave implementations empty; participants will implement them as part of tasks.
+ """
+ 
++import threading
++import time
++from typing import Any, Optional, Callable
++
++
+ class Cache:
+-    """Simple cache API stub.
++    """Thread-safe in-memory cache with optional TTL.
+ 
+-    Methods to implement:
+-    - get(key)
+-    - set(key, value, ttl=None)
+-    - invalidate(key)
++    - `get(key)` returns value or `None` if missing/expired.
++    - `set(key, value, ttl=None)` stores a value; `ttl` in seconds.
++    - `invalidate(key)` removes a key.
++    - `get_or_set(key, factory, ttl=None)` atomically returns existing value
++      or computes+stores the value using `factory()`.
++
++    This implementation uses a re-entrant lock to ensure correctness under
++    concurrent access. Expiry is checked on read/write operations.
+     """
+ 
+-    def __init__(self):
+-        # TODO: implement
+-        pass
++    def __init__(self) -> None:
++        self._data: dict[str, tuple[Any, Optional[float]]] = {}
++        self._lock = threading.RLock()
++
++    def _is_expired(self, expiry: Optional[float]) -> bool:
++        return expiry is not None and time.time() >= expiry
++
++    def get(self, key: str) -> Optional[Any]:
++        with self._lock:
++            item = self._data.get(key)
++            if item is None:
++                return None
++            value, expiry = item
++            if self._is_expired(expiry):
++                # remove expired entry
++                try:
++                    del self._data[key]
++                except KeyError:
++                    pass
++                return None
++            return value
++
++    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:
++        expiry = (time.time() + ttl) if (ttl is not None) else None
++        with self._lock:
++            self._data[key] = (value, expiry)
++
++    def invalidate(self, key: str) -> None:
++        with self._lock:
++            self._data.pop(key, None)
+ 
+-    def get(self, key):
+-        raise NotImplementedError
++    def get_or_set(self, key: str, factory: Callable[[], Any], ttl: Optional[int] = None) -> Any:
++        """Return existing value for `key` or compute+store using `factory()`.
+ 
+-    def set(self, key, value, ttl: int | None = None):
+-        raise NotImplementedError
++        The factory is invoked while holding the lock to ensure atomicity. If
++        factory is expensive and you want lower contention, implement a
++        per-key lock pattern.
++        """
++        with self._lock:
++            existing = self.get(key)
++            if existing is not None:
++                return existing
++            value = factory()
++            self.set(key, value, ttl=ttl)
++            return value
+ 
+-    def invalidate(self, key):
+-        raise NotImplementedError
+diff --git a/static/favicon.ico b/static/favicon.ico
+new file mode 100644
+index 0000000..8b13789
+--- /dev/null
++++ b/static/favicon.ico
+@@ -0,0 +1 @@
++

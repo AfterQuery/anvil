@@ -1,0 +1,50 @@
+- instance_id: my-dataset.task-1
+  test_files:
+    - task_tests.py
+  dockerfile: task-1/Dockerfile
+  image_name: vijayaseelam/anvil-images:advanced-dataset.task-1
+- instance_id: my-dataset.task-2
+  test_files:
+    - task_tests.py
+  dockerfile: task-2/Dockerfile
+  image_name: vijayaseelam/anvil-images:advanced-dataset.task-2
+- instance_id: my-dataset.task-3
+  test_files:
+    - task_tests.py
+  dockerfile: task-3/Dockerfile
+  image_name: vijayaseelam/anvil-images:advanced-dataset.task-3
+- instance_id: my-dataset.task-4
+  test_files:
+    - task_tests.py
+  dockerfile: task-4/Dockerfile
+  image_name: vijayaseelam/anvil-images:advanced-dataset.task-4
+- instance_id: my-dataset.task-5
+  test_files:
+    - task_tests.py
+  dockerfile: task-5/Dockerfile
+  image_name: vijayaseelam/anvil-images:advanced-dataset.task-5
+- instance_id: my-dataset.task-6
+  test_files:
+    - task_tests.py
+  dockerfile: task-6/Dockerfile
+  image_name: vijayaseelam/anvil-images:advanced-dataset.task-6
+- instance_id: my-dataset.task-7
+  test_files:
+    - task_tests.py
+  dockerfile: task-7/Dockerfile
+  image_name: vijayaseelam/anvil-images:advanced-dataset.task-7
+- instance_id: my-dataset.task-8
+  test_files:
+    - task_tests.py
+  dockerfile: task-8/Dockerfile
+  image_name: vijayaseelam/anvil-images:advanced-dataset.task-8
+- instance_id: my-dataset.task-9
+  test_files:
+    - task_tests.py
+  dockerfile: task-9/Dockerfile
+  image_name: vijayaseelam/anvil-images:advanced-dataset.task-9
+- instance_id: my-dataset.task-10
+  test_files:
+    - task_tests.py
+  dockerfile: task-10/Dockerfile
+  image_name: vijayaseelam/anvil-images:advanced-dataset.task-10

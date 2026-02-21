@@ -88,8 +88,21 @@ def _patch_dockerfile_if_needed(dockerfile: Path, username: str, repo: str) -> s
     """Return Dockerfile content with COPY . . inserted after FROM if missing."""
     content = dockerfile.read_text()
 
-    # Rewrite FROM to use user's repo
-    content = re.sub(r"^(FROM\s+)\S+/\S+:", rf"\1{username}/{repo}:", content, count=1, flags=re.MULTILINE)
+    # Rewrite FROM to use user's repo.
+    # 1) If FROM already uses a qualified image (user/repo:tag), replace the user/repo prefix.
+    content = re.sub(r"^(FROM\s+)(\S+/\S+:)", rf"\1{username}/{repo}:", content, count=1, flags=re.MULTILINE)
+    # 2) If FROM uses an unqualified identifier (e.g. "my-repo.base"), rewrite to
+    #    "<username>/<repo>:<identifier>" so builds refer to the tagged images this tool pushes.
+    # Only rewrite unqualified names that do NOT include a ':' (tag) or '/' (qualified)
+    # so we don't accidentally rewrite official images like 'python:3.12-slim'.
+    # Match the image token only if it's followed by whitespace or end-of-line.
+    content = re.sub(
+        r"^(FROM\s+)([^:/\s]+)(\s|$)",
+        rf"\1{username}/{repo}:\2\3",
+        content,
+        count=1,
+        flags=re.MULTILINE,
+    )
 
     if re.search(r"(?:COPY|ADD)\s+\.\s", content):
         return content

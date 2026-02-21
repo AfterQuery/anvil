@@ -1,0 +1,4 @@
+Instance ID: advanced-dataset.task-10
+Test Files: task-10/task_tests.py
+FAIL_TO_PASS: ['test_no_memory_growth','test_close_resources','test_gc_friendly']
+PASS_TO_PASS: []

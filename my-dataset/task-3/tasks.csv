@@ -1,0 +1,7 @@
+instance_id,test_name,test_class,description
+my-dataset.task-3,test_get_profile_in_interface,task_tests,Verify UserService interface has get_profile method
+my-dataset.task-3,test_get_profile_implemented,task_tests,Verify get_profile implementation in userService
+my-dataset.task-3,test_profile_route_exists,task_tests,Verify /api/profile endpoint exists and calls get_profile
+my-dataset.task-3,test_get_profile_returns_dict,task_tests,Verify that get_profile returns a dictionary for valid user IDs
+my-dataset.task-3,test_get_profile_contains_required_fields,task_tests,"Verify that get_profile returns dict with id, name, and email fields"
+my-dataset.task-3,test_get_profile_returns_none_for_missing_user,task_tests,Verify that get_profile returns None when user does not exist

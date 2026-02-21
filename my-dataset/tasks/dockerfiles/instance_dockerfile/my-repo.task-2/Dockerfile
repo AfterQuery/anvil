@@ -1,0 +1,1 @@
+FROM my-repo.base

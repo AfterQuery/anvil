@@ -1,0 +1,4 @@
+Update service.py and controller.py to add `get_profile` and `/api/profile` route.
+
+Changes mirror the gold implementation: add `get_profile` to interface and implementation,
+and add the route that uses `require_auth` and returns 401/404/200 as appropriate.

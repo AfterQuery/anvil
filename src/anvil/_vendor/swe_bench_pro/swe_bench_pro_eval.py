@@ -66,13 +66,35 @@ def get_dockerhub_image_uri(uid: str, dockerhub_username: str, dockerhub_repo: s
 # ---- Docker helpers ----
 
 def load_base_docker(iid):
-    with open(f"dockerfiles/base_dockerfile/{iid}/Dockerfile") as fp:
-        return fp.read()
+    path = f"dockerfiles/base_dockerfile/{iid}/Dockerfile"
+    try:
+        with open(path) as fp:
+            return fp.read()
+    except FileNotFoundError:
+        return ""
 
 
 def instance_docker(iid):
-    with open(f"dockerfiles/instance_dockerfile/{iid}/Dockerfile") as fp:
-        return fp.read()
+    # Try expected dockerfiles location first
+    path = f"dockerfiles/instance_dockerfile/{iid}/Dockerfile"
+    try:
+        with open(path) as fp:
+            return fp.read()
+    except FileNotFoundError:
+        # Fallback: some datasets place Dockerfiles under the dataset task directories
+        try:
+            # If iid like 'my-dataset.task-3', try 'my-dataset/task-3/Dockerfile'
+            if iid.startswith("my-dataset.task-"):
+                parts = iid.split("my-dataset.task-")
+                if len(parts) == 2 and parts[1].isdigit():
+                    n = parts[1]
+                    alt_path = f"my-dataset/task-{n}/Dockerfile"
+                    with open(alt_path) as fp:
+                        return fp.read()
+        except Exception:
+            pass
+        # Final fallback: return empty string
+        return ""
 
 
 def load_local_script(scripts_dir, instance_id, script_name):
@@ -124,8 +146,16 @@ git checkout {base_commit} 2>/dev/null || true
 git apply -v --ignore-whitespace /workspace/patch.diff 2>&1 || \\
 patch -p1 --forward --reject-file=- --no-backup-if-mismatch < /workspace/patch.diff 2>&1 || true
 {before_repo_set_cmd}
+# Ensure pip and pytest are available; install project requirements if present.
+python3 -m pip install --upgrade pip setuptools wheel > /workspace/pip_install.log 2>&1 || true
+if [ -f /app/requirements.txt ]; then
+    python3 -m pip install -r /app/requirements.txt >> /workspace/pip_install.log 2>&1 || true
+fi
+python3 -m pip install pytest >> /workspace/pip_install.log 2>&1 || true
+
+# Run tests and parse results
 bash /workspace/run_script.sh {selected_test_files_to_run} > /workspace/stdout.log 2> /workspace/stderr.log
-python3 /workspace/parser.py /workspace/stdout.log /workspace/stderr.log /workspace/output.json
+python3 /workspace/parser.py /workspace/stdout.log /workspace/stderr.log /workspace/output.json "{sample.get('fail_to_pass', '')}" "{sample.get('pass_to_pass', '')}"
 """
     return entry_script
 
@@ -262,7 +292,9 @@ def eval_with_modal(
 ):
     if modal is None:
         raise RuntimeError("modal is not installed")
+
     uid = sample["instance_id"]
+
     existing_output, output_path, workspace_dir, uid_dir = prepare_run(
         uid, output_dir, prefix, redo, attempt=attempt
     )
@@ -270,20 +302,22 @@ def eval_with_modal(
         return existing_output
 
     sandbox = None
-    
+
     try:
         write_patch_snapshot(uid_dir, prefix, patch)
         files, entryscript_content = assemble_workspace_files(uid, scripts_dir, patch, sample)
 
         app = modal.App.lookup(name="anvil-swe-bench-eval", create_if_missing=True)
-        
-        # Use image_name from instances.yaml if available, otherwise construct it
+
+        # Use image_name from instances.yaml if available
         if "image_name" in sample and sample["image_name"]:
             dockerhub_image_uri = sample["image_name"]
         else:
-            dockerhub_image_uri = get_dockerhub_image_uri(uid, dockerhub_username, dockerhub_repo, sample.get("repo", ""))
+            dockerhub_image_uri = get_dockerhub_image_uri(
+                uid, dockerhub_username, dockerhub_repo, sample.get("repo", "")
+            )
 
-        # Registry credentials for private Docker Hub images
+        # Optional DockerHub credentials
         registry_secret = None
         if os.environ.get("REGISTRY_USERNAME") and os.environ.get("REGISTRY_PASSWORD"):
             registry_secret = modal.Secret.from_dict({
@@ -291,18 +325,26 @@ def eval_with_modal(
                 "REGISTRY_PASSWORD": os.environ["REGISTRY_PASSWORD"],
             })
 
+        # ✅ FIXED IMAGE SECTION (NO force_build)
         image = modal.Image.from_registry(
-            dockerhub_image_uri, secret=registry_secret, force_build=True,
-        ).dockerfile_commands(['CMD ["sleep", "infinity"]'])
+            dockerhub_image_uri,
+            secret=registry_secret
+        )
 
         sandbox = modal.Sandbox.create(
-            image=image, app=app, timeout=60 * 60,
-            cpu=(1, 4), memory=(5 * 1024, 30 * 1024), block_network=block_network,
+            image=image,
+            app=app,
+            timeout=60 * 60,
+            cpu=(1, 4),
+            memory=(5 * 1024, 30 * 1024),
+            block_network=block_network,
         )
 
         process = sandbox.exec("mkdir", "-p", "/workspace")
         process.wait()
+
         write_files_modal(sandbox, files)
+
         process = sandbox.exec("bash", "/workspace/entryscript.sh")
         process.wait()
 
@@ -310,13 +352,17 @@ def eval_with_modal(
             print(f"Entryscript failed for {uid} with return code: {process.returncode}")
 
         output = collect_outputs_modal(sandbox, uid_dir, uid, prefix)
+
         if output is None:
             return None
+
         save_entryscript_copy(uid_dir, prefix, entryscript_content)
         return output
+
     except Exception as e:
         print(f"Error evaluating {uid}: {e}")
         raise
+
     finally:
         if sandbox:
             try:
@@ -455,7 +501,7 @@ def main():
             executor.submit(
                 eval_fn,
                 patch_sample.get("model_patch", patch_sample.get("patch", "")),
-                raw_sample_df.loc[patch_sample["instance_id"]],
+                raw_sample_df.loc[patch_sample["instance_id"]].to_dict(),
                 args.output_dir, args.dockerhub_username, args.scripts_dir, args.dockerhub_repo,
                 prefix=patch_sample.get("prefix", ""), redo=args.redo,
                 block_network=args.block_network,

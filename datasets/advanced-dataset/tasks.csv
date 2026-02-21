@@ -1,0 +1,11 @@
+repo,instance_id,base_commit,patch,test_patch,problem_statement,requirements,interface,repo_language,fail_to_pass,pass_to_pass,issue_specificity,issue_categories,before_repo_set_cmd,selected_test_files_to_run
+my-repo,advanced-dataset.task-1,d86a2acc481ad4130e21fffa395842ae18883554,,,"Cache correctness under concurrency","pytest","","python","test_task1_*","","performance,concurrency","",task-1/task_tests.py
+my-repo,advanced-dataset.task-2,d86a2acc481ad4130e21fffa395842ae18883554,,,"Design an efficient incremental indexer","pytest","","python","test_task2_*","","algorithms,systems","",task-2/task_tests.py
+my-repo,advanced-dataset.task-3,d86a2acc481ad4130e21fffa395842ae18883554,,,"Fix and harden an API rate limiter","pytest","","python","test_task3_*","","security,api","",task-3/task_tests.py
+my-repo,advanced-dataset.task-4,d86a2acc481ad4130e21fffa395842ae18883554,,,"Implement a resilient transaction migrator","pytest","","python","test_task4_*","","datamigrations,consistency","",task-4/task_tests.py
+my-repo,advanced-dataset.task-5,d86a2acc481ad4130e21fffa395842ae18883554,,,"Add deterministic serialization with schema evolution","pytest","","python","test_task5_*","","serialization,compatibility","",task-5/task_tests.py
+my-repo,advanced-dataset.task-6,d86a2acc481ad4130e21fffa395842ae18883554,,,"Optimize hot-path algorithm to reduce p95 latency","pytest","","python","test_task6_*","","algorithms,performance","",task-6/task_tests.py
+my-repo,advanced-dataset.task-7,d86a2acc481ad4130e21fffa395842ae18883554,,,"Secure dependency injection against untrusted plugins","pytest","","python","test_task7_*","","security,design","",task-7/task_tests.py
+my-repo,advanced-dataset.task-8,d86a2acc481ad4130e21fffa395842ae18883554,,,"Implement a robust CSV/JSON streaming converter","pytest","","python","test_task8_*","","io,parsing","",task-8/task_tests.py
+my-repo,advanced-dataset.task-9,d86a2acc481ad4130e21fffa395842ae18883554,,,"Add correct idempotent webhook processing","pytest","","python","test_task9_*","","systems,idempotency","",task-9/task_tests.py
+my-repo,advanced-dataset.task-10,d86a2acc481ad4130e21fffa395842ae18883554,,,"Detect and fix subtle memory leaks in long-running worker","pytest","","python","test_task10_*","","performance,stability","",task-10/task_tests.py

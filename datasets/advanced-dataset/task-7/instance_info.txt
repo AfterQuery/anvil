@@ -1,0 +1,4 @@
+Instance ID: advanced-dataset.task-7
+Test Files: task-7/task_tests.py
+FAIL_TO_PASS: ['test_capability_interface','test_sandboxing_checks','test_audit_hooks']
+PASS_TO_PASS: []

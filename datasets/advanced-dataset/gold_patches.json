@@ -1,0 +1,44 @@
+{
+  "gold_patches": [
+    {
+      "instance_id": "advanced-dataset.task-1",
+      "patch": "\ndiff --git a/app.py b/app.py\nnew file mode 100644\nindex 0000000..1a9255b\n--- /dev/null\n+++ b/app.py\n@@ -0,0 +1,12 @@\nfrom flask import Flask\n\napp = Flask(__name__)\n\n\n@app.route('/')\ndef index():\n    return 'OK', 200\n\n\nif __name__ == '__main__':\n    app.run(host='0.0.0.0', port=8000)\n\ndiff --git a/cache.py b/cache.py\nindex b215c20..8505dd4 100644\n--- a/cache.py\n+++ b/cache.py\n@@ -3,24 +3,67 @@\nLeave implementations empty; participants will implement them as part of tasks.\n\"\"\"\n\nimport threading\nimport time\nfrom typing import Any, Optional, Callable\n\n\nclass Cache:\n    \"\"\"Thread-safe in-memory cache with optional TTL.\n\n    - `get(key)` returns value or `None` if missing/expired.\n    - `set(key, value, ttl=None)` stores a value; `ttl` in seconds.\n    - `invalidate(key)` removes a key.\n    - `get_or_set(key, factory, ttl=None)` atomically returns existing value\n      or computes+stores the value using `factory()`.\n\n    This implementation uses a re-entrant lock to ensure correctness under\n    concurrent access. Expiry is checked on read/write operations.\n    \"\"\"\n\n    def __init__(self) -> None:\n        self._data: dict[str, tuple[Any, Optional[float]]] = {}\n        self._lock = threading.RLock()\n\n    def _is_expired(self, expiry: Optional[float]) -> bool:\n        return expiry is not None and time.time() >= expiry\n\n    def get(self, key: str) -> Optional[Any]:\n        with self._lock:\n            item = self._data.get(key)\n            if item is None:\n                return None\n            value, expiry = item\n            if self._is_expired(expiry):\n                # remove expired entry\n                try:\n                    del self._data[key]\n                except KeyError:\n                    pass\n                return None\n            return value\n\n    def set(self, key: str, value: Any, ttl: Optional[int] = None) -> None:\n        expiry = (time.time() + ttl) if (ttl is not None) else None\n        with self._lock:\n            self._data[key] = (value, expiry)\n\n    def invalidate(self, key: str) -> None:\n        with self._lock:\n            self._data.pop(key, None)\n\n    def get_or_set(self, key: str, factory: Callable[[], Any], ttl: Optional[int] = None) -> Any:\n        \"\"\"Return existing value for `key` or compute+store using `factory()`.\n\n        The factory is invoked while holding the lock to ensure atomicity. If\n        factory is expensive and you want lower contention, implement a\n        per-key lock pattern.\n        \"\"\"\n        with self._lock:\n            existing = self.get(key)\n            if existing is not None:\n                return existing\n            value = factory()\n            self.set(key, value, ttl=ttl)\n            return value\n"
+    },
+    {
+      "instance_id": "advanced-dataset.task-2",
+      "patch": "diff --git a/indexer.py b/indexer.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/indexer.py\n@@ -0,0 +1,12 @@\n+\n+class Indexer:\n+    \"\"\"Simple indexer with merge and query placeholders.\"\"\"\n+    def __init__(self):\n+        self._data = {}\n+    def apply_diff(self, diff):\n+        self._data.update(diff)\n+    def merge(self, other):\n+        for k,v in sorted(other.items()):\n+            self._data[k]=v\n+    def query(self,q):\n+        return [v for k,v in self._data.items() if q in str(k) or q in str(v)]\ndiff --git a/cli.py b/cli.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/cli.py\n@@ -0,0 +1,2 @@\n+def main():\n+    print('indexer CLI')\ndiff --git a/README.md b/README.md\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/README.md\n@@ -0,0 +1,1 @@\n+Index and search helpers.\n"
+    },
+    {
+      "instance_id": "advanced-dataset.task-3",
+      "patch": "diff --git a/rate_limiter.py b/rate_limiter.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/rate_limiter.py\n@@ -0,0 +1,16 @@\n+\n+class TokenBucket:\n+    def __init__(self, rate, capacity):\n+        self.rate=rate\n+        self.capacity=capacity\n+        self.tokens=capacity\n+    def consume(self,n=1):\n+        if n>self.tokens:\n+            raise ValueError('rate limit exceeded')\n+        self.tokens-=n\n+\n+def refill(bucket):\n+    bucket.tokens=min(bucket.capacity,bucket.tokens+bucket.rate)\n+\n+def hint_multi_process():\n+    return 'multiprocessing or redis recommended'\ndiff --git a/api.py b/api.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/api.py\n@@ -0,0 +1,2 @@\n+def register_routes(app):\n+    pass\n"
+    },
+    {
+      "instance_id": "advanced-dataset.task-4",
+      "patch": "diff --git a/migrator.py b/migrator.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/migrator.py\n@@ -0,0 +1,13 @@\n+\n+def migrate(state,dry=False):\n+    if dry:\n+        return 'dry-run'\n+    state['checkpoint']=state.get('checkpoint',0)+1\n+    return state\n+\n+def rollback(state):\n+    state['checkpoint']=max(0,state.get('checkpoint',0)-1)\n+    return state\n+\n+def resume(state):\n+    return state\ndiff --git a/README.md b/README.md\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/README.md\n@@ -0,0 +1,1 @@\n+Migration docs\n"
+    },
+    {
+      "instance_id": "advanced-dataset.task-5",
+      "patch": "diff --git a/serializer.py b/serializer.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/serializer.py\n@@ -0,0 +1,13 @@\n+\n+def serialize(obj):\n+    return str(obj).encode('utf-8')\n+\n+def validate(obj):\n+    if obj is None:\n+        raise ValueError('invalid')\n+\n+def version():\n+    return 1\n+\n+def example_usage():\n+    return serialize({'a':1})\ndiff --git a/README.md b/README.md\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/README.md\n@@ -0,0 +1,1 @@\n+Schema notes\n"
+    },
+    {
+      "instance_id": "advanced-dataset.task-6",
+      "patch": "diff --git a/hotpath.py b/hotpath.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/hotpath.py\n@@ -0,0 +1,8 @@\n+\n+def process(items):\n+    items=sorted(items)\n+    return items\n+\n+def heavy_algo(items):\n+    items.sort()\n+    return items\ndiff --git a/README.md b/README.md\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/README.md\n@@ -0,0 +1,1 @@\n+Benchmark: p95 etc\n"
+    },
+    {
+      "instance_id": "advanced-dataset.task-7",
+      "patch": "diff --git a/plugin_api.py b/plugin_api.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/plugin_api.py\n@@ -0,0 +1,12 @@\n+\n+def capability():\n+    return ['read','write']\n+\n+def sanitize(x):\n+    return str(x)\n+\n+def audit(msg):\n+    print('audit',msg)\n+\n+def policy_enforce(action):\n+    return True\ndiff --git a/README.md b/README.md\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/README.md\n@@ -0,0 +1,1 @@\n+Plugin docs\n"
+    },
+    {
+      "instance_id": "advanced-dataset.task-8",
+      "patch": "diff --git a/stream_convert.py b/stream_convert.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/stream_convert.py\n@@ -0,0 +1,16 @@\n+\n+def convert(rows):\n+    for row in rows:\n+        if not row:\n+            yield None\n+        else:\n+            yield row.split(',')\n+\n+def header_flexible(row):\n+    return row.split(',')\n+\n+def handle_malformed(row):\n+    try:\n+        return row.split(',')\n+    except Exception:\n+        return None\ndiff --git a/README.md b/README.md\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/README.md\n@@ -0,0 +1,1 @@\n+Stream docs\n"
+    },
+    {
+      "instance_id": "advanced-dataset.task-9",
+      "patch": "diff --git a/webhook.py b/webhook.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/webhook.py\n@@ -0,0 +1,10 @@\n+\n+import threading\n+lock=threading.Lock()\n+\n+def handle(event):\n+    key=event.get('id')\n+    return True\n+\n+def retry_logic():\n+    return 'retry'\ndiff --git a/db.py b/db.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/db.py\n@@ -0,0 +1,2 @@\n+def connect():\n+    return None\n"
+    },
+    {
+      "instance_id": "advanced-dataset.task-10",
+      "patch": "diff --git a/worker.py b/worker.py\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/worker.py\n@@ -0,0 +1,10 @@\n+\n+def process_tasks(tasks):\n+    for t in tasks:\n+        yield t\n+\n+def close_resources():\n+    pass\n+\n+def cleanup():\n+    pass\ndiff --git a/README.md b/README.md\nnew file mode 100644\nindex 0000000..0000001\n--- /dev/null\n+++ b/README.md\n@@ -0,0 +1,1 @@\n+Worker docs\n"
+    }
+  ]
+}
