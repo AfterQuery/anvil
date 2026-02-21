@@ -45,6 +45,8 @@ echo "REGISTRY_PASSWORD=your-dockerhub-password" >> .env
 
 ### Step 1: Initialize Dataset
 
+> **Important:** Your repository **must** be a git repo (contain a `.git` directory). Anvil uses `git reset --hard` to align to the `base_commit` before applying patches, so full git history is required. The wizard will reject repos without `.git`.
+
 ```bash
 anvil init-dataset \
   --dataset my-dataset \
@@ -298,15 +300,15 @@ git checkout .
 
 ### Oracle Fails
 
-1. **Patch doesn't apply**
-   ```bash
-   cd my-dataset/my-repo
-   git apply ../task-1/tasks.csv  # Extract patch and test
-   ```
+1. **"No .git directory found"** - Your repo ZIP must include the `.git` directory. Re-zip from within the repo root (e.g. `cd my-repo && zip -r ../my-repo.zip .`)
 
-2. **Tests can't find files** - Check paths match `/app/{repo-name}/...`
+2. **"base_commit not found"** - The `base_commit` in your task doesn't exist in the repo's git history. Verify with `git rev-parse --verify <commit>`
 
-3. **Test names mismatch** - Ensure `fail_to_pass` matches function names exactly
+3. **"Patch failed to apply"** - The patch context lines don't match the file contents at `base_commit`. Regenerate the patch against the correct commit.
+
+4. **Tests can't find files** - Check paths match `/app/{repo-name}/...`
+
+5. **Test names mismatch** - Ensure `fail_to_pass` matches function names exactly
 
 ### Images Don't Build
 

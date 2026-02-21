@@ -16,10 +16,13 @@ from .validators import (
     extract_test_names,
     validate_all_tasks,
     validate_base_commit,
+    validate_commit_exists_in_repo,
     validate_dataset_id,
     validate_dataset_structure,
+    validate_patch_applies,
     validate_patch_format,
     validate_python_syntax,
+    validate_repo_has_git,
     validate_task_id,
     validate_test_names,
 )
@@ -97,6 +100,18 @@ def _find_repo_in_dataset(dataset_path: Path) -> Path | None:
     """Find the git repository directory in a dataset."""
     for item in dataset_path.iterdir():
         if item.is_dir() and (item / ".git").exists():
+            return item
+    return None
+
+
+def _find_repo_dir_in_dataset(dataset_path: Path) -> Path | None:
+    """Find the repository directory in a dataset, whether or not it has .git.
+
+    Looks for any directory that isn't a task directory (task-*).
+    Falls back to _find_repo_in_dataset if nothing else is found.
+    """
+    for item in sorted(dataset_path.iterdir()):
+        if item.is_dir() and not item.name.startswith("task-"):
             return item
     return None
 
@@ -238,6 +253,14 @@ def init_dataset(
 
         typer.echo(f"Copying repository from {source}...")
         shutil.copytree(source, repo_dest, dirs_exist_ok=True)
+
+    # Validate .git exists in the repo
+    if repo_dest.exists():
+        errors = validate_repo_has_git(repo_dest)
+        if errors:
+            for err in errors:
+                typer.secho(f"Error: {err}", fg=typer.colors.RED)
+            raise typer.Exit(1)
 
     # Summary
     typer.secho("\nDataset initialized successfully!", fg=typer.colors.GREEN)
@@ -549,6 +572,29 @@ def add_task(
         for err in errors:
             typer.secho(f"Error: {err}", fg=typer.colors.RED)
         raise typer.Exit(1)
+
+    # Validate .git exists and commit is reachable
+    repo_dir = _find_repo_dir_in_dataset(dataset_path)
+    if repo_dir:
+        errors = validate_repo_has_git(repo_dir)
+        if errors:
+            for err in errors:
+                typer.secho(f"Error: {err}", fg=typer.colors.RED)
+            raise typer.Exit(1)
+
+        errors = validate_commit_exists_in_repo(repo_dir, base_commit)
+        if errors:
+            for err in errors:
+                typer.secho(f"Error: {err}", fg=typer.colors.RED)
+            raise typer.Exit(1)
+
+        # Dry-run patch to verify it applies cleanly
+        errors = validate_patch_applies(repo_dir, patch_content, base_commit)
+        if errors:
+            for err in errors:
+                typer.secho(f"Error: {err}", fg=typer.colors.RED)
+            raise typer.Exit(1)
+        typer.echo("Patch applies cleanly against base commit.")
 
     # Determine repo name
     if not repo_name:
