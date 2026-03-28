@@ -171,7 +171,10 @@ afterquery/
 GITIGNORE_EOF
 """,
         f'echo "{PATCH_START_MARKER}"',
-        "git add -A && git reset --quiet HEAD -- afterquery/ .gitignore 2>/dev/null || true && git diff --cached || true",
+        "git add -A && git reset --quiet HEAD -- afterquery/ .gitignore package-lock.json pnpm-lock.yaml yarn.lock bun.lockb 2>/dev/null || true",
+        # Unstage binary files that agents may have compiled (e.g. Go binaries without extensions)
+        r"""git diff --cached --numstat | awk '$1 == "-" && $2 == "-" {print $3}' | xargs -r git reset --quiet HEAD -- 2>/dev/null || true""",
+        "git diff --cached --binary || true",
         f'echo "{PATCH_END_MARKER}"',
         f"echo '=== Files in {output_dir}:' && ls -la {output_dir}/ 2>/dev/null || echo '(none)'",
         f'echo "{TRAJECTORY_START_MARKER}"',

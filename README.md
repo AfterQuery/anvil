@@ -123,7 +123,6 @@ anvil run-evals -d my-dataset --agent oracle -u <dockerhub-username> --dockerhub
 ```
 
 See **[docs/TASK_CREATION_GUIDE.md](docs/TASK_CREATION_GUIDE.md)** for the complete guide including:
-- Writing effective structural tests
 - Task file format reference
 - Troubleshooting tips
 - Full workflow example
