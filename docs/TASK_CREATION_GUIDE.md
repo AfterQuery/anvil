@@ -198,29 +198,6 @@ anvil run-evals -d my-dataset \
 
 ## Writing Good Tests
 
-### Structural Tests (Recommended)
-
-Check for code patterns without executing:
-
-```python
-from pathlib import Path
-
-def test_method_exists():
-    content = Path("/app/my-repo/service.go").read_text()
-    assert "func (s *Service) GetProfile" in content
-
-def test_route_protected():
-    content = Path("/app/my-repo/routes.go").read_text()
-    assert "AuthMiddleware" in content
-    assert "/profile" in content
-```
-
-**Why structural tests?**
-- Fast (no compilation)
-- Language-agnostic
-- Predictable results
-- Easy to debug
-
 ### Tips for Test Paths
 
 Files are mounted at `/app/{repo-name}/`:

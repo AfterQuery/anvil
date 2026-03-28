@@ -112,17 +112,36 @@ def create_entryscript(sample):
     entry_script = f"""
 {env_cmds}
 cd /app
-# If .git/ is missing (e.g. repo uploaded as zip without git history),
-# initialize a git repo so git apply can work
+
+# --- Validate git repo ---
 if [ ! -d .git ]; then
-    git init -q
-    git add -A
-    git commit -q -m "init" --allow-empty
+    echo "[anvil] FATAL: No .git directory found in /app." >&2
+    echo "[anvil] The Docker image must include the repository's git history." >&2
+    exit 1
 fi
-git reset --hard {base_commit} 2>/dev/null || true
-git checkout {base_commit} 2>/dev/null || true
-git apply -v --ignore-whitespace /workspace/patch.diff 2>&1 || \\
-patch -p1 --forward --reject-file=- --no-backup-if-mismatch < /workspace/patch.diff 2>&1 || true
+
+git config user.email 'anvil@afterquery.com'
+git config user.name 'Anvil'
+
+# --- Validate base_commit ---
+if ! git rev-parse --verify {base_commit}^{{commit}} >/dev/null 2>&1; then
+    echo "[anvil] FATAL: base_commit {base_commit} not found in git history." >&2
+    exit 1
+fi
+
+git reset --hard {base_commit}
+git clean -fdx
+
+# --- Apply patch (with fallback for agent-generated patches) ---
+if [ -s /workspace/patch.diff ]; then
+    if git apply -v --ignore-whitespace /workspace/patch.diff 2>&1; then
+        echo "[anvil] Patch applied cleanly."
+    elif patch --batch --fuzz=5 -p1 -i /workspace/patch.diff 2>&1; then
+        echo "[anvil] Patch applied with fuzz (patch command fallback)."
+    else
+        echo "[anvil] WARNING: Patch could not be applied. Running tests on base code." >&2
+    fi
+fi
 {before_repo_set_cmd}
 bash /workspace/run_script.sh {selected_test_files_to_run} > /workspace/stdout.log 2> /workspace/stderr.log
 python3 /workspace/parser.py /workspace/stdout.log /workspace/stderr.log /workspace/output.json
@@ -471,10 +490,22 @@ def main():
             instance_id = patch_sample["instance_id"]
             attempt = patch_sample.get("attempt")
             result_key = f"{instance_id}:attempt_{attempt}" if attempt else instance_id
-            output = future.result()
+            try:
+                output = future.result()
+            except Exception as e:
+                print(f"Eval exception for {instance_id} (attempt {attempt}): {e}")
+                output = None
             if output is None:
                 eval_results[result_key] = False
                 status = "fail"
+                # Persist failure to disk so it's not retried on resume
+                if attempt is not None:
+                    task_results_dir = os.path.join(
+                        args.output_dir, instance_id, f"attempt_{attempt}", "eval_results"
+                    )
+                    os.makedirs(task_results_dir, exist_ok=True)
+                    with open(os.path.join(task_results_dir, "eval_results.json"), "w") as f:
+                        json.dump({instance_id: False}, f)
             else:
                 if instance_id not in raw_sample_df.index:
                     eval_results[result_key] = False
