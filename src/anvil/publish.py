@@ -162,7 +162,7 @@ def _update_instances_yaml(
 
 
 def publish_images(
-    dataset_id: str = typer.Option(..., "--dataset", help="Dataset ID"),
+    dataset_id: str = typer.Option(..., "--dataset", "-d", help="Dataset ID"),
     dockerhub_username: str = typer.Option(..., "--dockerhub-username", "-u", help="Docker Hub username"),
     platform: str = typer.Option("linux/amd64", "--platform", help="Docker platform"),
     repo_name: str = typer.Option("anvil-images", "--repo", help="Docker Hub repository name"),
